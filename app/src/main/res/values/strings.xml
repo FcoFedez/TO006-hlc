@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Ud6_REST_con__JSON_matriculas_02</string>
+    <string name="alumno">Nombre del Alumno</string>
+    <string name="matricula">Número de matrícula</string>
+    <string name="tlf">Teléfono</string>
+    <string name="email">Email</string>
+    <string name="insertar">Insertar</string>
+    <string name="mostrar">Mostrar</string>
+</resources>
