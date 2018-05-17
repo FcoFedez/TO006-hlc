@@ -3,6 +3,9 @@ package com.pms.ud6_rest_con__json_matriculas_02;
 // código adaptado del código original de la página web:
 // http://picarcodigo.blogspot.com.es/2014/05/webservice-conexion-base-de-datos-mysql.html
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -47,11 +50,16 @@ import java.util.List;
 public class MainActivity extends Activity {
 
     // atributos
-    public EditText matricula;
-    public EditText alumno;
-    public EditText telefono;
-    public EditText email;
+    public static EditText matricula;
+    public static EditText alumno;
+    public static EditText telefono;
+    public static  EditText email;
     private Button insertar;
+    private Button borrar;
+    private Button buscar;
+    private Button actualizar;
+    private Button nuevo;
+
 
     private Button mostrar;
     private ImageButton mas;
@@ -62,12 +70,13 @@ public class MainActivity extends Activity {
     private ProgressDialog pDialog = null; // barra de progreso (mostrada mientras se conecta a la BD)
 
     // dirección IP o URL del servidor
-    //private final static String URL_SERVIDOR ="192.168.0.115"; // comprobar IP local que puede cambiar
-    private final static String URL_SERVIDOR = "isabelmcg.esy.es"; // hosting en hostinger
+    //private final static String URL_SERVIDOR ="192.168.1.128"; // comprobar IP local que puede cambiar
+    //private final static String URL_SERVIDOR = "isabelmcg.esy.es"; // hosting en hostinger
+    private final static String URL_SERVIDOR = "xtremsport.esy.es"; // hosting en hostinger
 
 
     // URL del directorio de los scripts php del servidor
-    private final static String URL_PHP = "http://" + URL_SERVIDOR + "/rest_con_json/";
+    protected final static String URL_PHP = "http://" + URL_SERVIDOR + "/rest_con_json/";
 
 
     @Override
@@ -101,6 +110,49 @@ public class MainActivity extends Activity {
                     new WebService_insertar(MainActivity.this).execute();
                 else
                     tostada("Hay información por rellenar");
+            }
+        });
+        nuevo = findViewById(R.id.btnNuevo);
+        nuevo.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View v) {
+                limpiar();
+            }
+        });
+
+        borrar = findViewById(R.id.btnBorrar);
+        borrar.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View v) {
+                confirmDeleteAlumno();
+
+            }
+        });
+
+        buscar = findViewById(R.id.btnBuscar);
+        buscar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!alumno.getText().toString().trim().equalsIgnoreCase("")){
+                    int i= idPorNombre(alumno.getText().toString().trim());
+                    System.out.println(i);
+                    BuscarAlumno ba = new BuscarAlumno(MainActivity.this,i);
+                    actulizaPosicion(alumno.getText().toString().trim());
+                }else tostada("El campo nombre debe estar relleno");
+            }
+        });
+
+        actualizar = findViewById(R.id.btnModificar);
+        actualizar.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ActualizarAlumno aa = new ActualizarAlumno(MainActivity.this,idAlumno(posicion));
+                listaAlumnos.get(posicion).setAlumno(alumno.getText().toString().trim());
+                listaAlumnos.get(posicion).setEmail(email.getText().toString().trim());
+                listaAlumnos.get(posicion).setMatricula(Integer.parseInt(matricula.getText().toString().trim()));
+                listaAlumnos.get(posicion).setTelefono(Integer.parseInt(telefono.getText().toString().trim()));
             }
         });
 
@@ -171,6 +223,47 @@ public class MainActivity extends Activity {
 
     } // fin onCreate()
 
+    public static void limpiar(){
+        alumno.setText("");
+        matricula.setText("");
+        telefono.setText("");
+        email.setText("");
+    }
+
+    /**
+     * Método que muestra un cuadro de diálogo y pregunta la usuario si quiere borrar o no
+     * al alumno actual. En caso de que confirmación 'Yes' => lo borra de la BD
+     */
+    private void confirmDeleteAlumno(){
+        // Definir el cuadro de diálogo
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setMessage("Desea eliminar el usuario "+alumno.getText().toString().trim()+"?");
+
+        // Si el usuario pulsa el botón del "Yes"
+        alertDialogBuilder.setPositiveButton("Yes",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface arg0, int arg1) {
+                        // borrar al empleado actual
+                        BorrarAlumno b = new BorrarAlumno(MainActivity.this,idAlumno(posicion));
+                        listaAlumnos.remove(posicion);
+                    }
+                });
+
+        // Si el usuario pulsa el botón del "NO" => no hace nada
+        alertDialogBuilder.setNegativeButton("No",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface arg0, int arg1) {
+
+                    }
+                });
+
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
+    }
+
+
     /**
      * Método que intenta insertar los datos de las Personas en el servidor
      * a través del script => insert.php
@@ -218,6 +311,7 @@ public class MainActivity extends Activity {
             // intentamos ejecutar la solicitud HTTP POST
             httpclient.execute(httppost);
             resul = true;
+            new WebService_mostrar(MainActivity.this).execute();
         } catch (UnsupportedEncodingException e) {
             // La codificación de caracteres no es compatible
             resul = false;
@@ -382,6 +476,7 @@ public class MainActivity extends Activity {
                     alumno.setMatricula(jsonArrayChild.optInt("matricula"));
                     alumno.setTelefono(jsonArrayChild.optInt("telefono"));
                     alumno.setEmail(jsonArrayChild.optString("email"));
+                    alumno.setId(jsonArrayChild.optInt("id"));
 
                     /****** ******************* *************************/
 
@@ -407,6 +502,33 @@ public class MainActivity extends Activity {
         return resul;
     } // fin filtrarDatos()
 
+    private int idAlumno(int posicion){
+        Alumno aux = listaAlumnos.get(posicion);
+        return aux.getId();
+    }
+
+    private int idPorNombre(String nombre){
+        int id = 0;
+        for(int i = 0;i < listaAlumnos.size();i++){
+            Alumno aux = listaAlumnos.get(i);
+            if(aux.getAlumno().equalsIgnoreCase(nombre)){
+                id = aux.getId();
+                break;
+            }
+
+        }
+        return id;
+    }
+
+    private void actulizaPosicion(String nombre){
+        for(int i = 0; i<listaAlumnos.size();i++){
+            Alumno aux = listaAlumnos.get(i);
+            if(aux.getAlumno().equals(nombre)){
+                posicion = i;
+            }
+        }
+    }
+
     /**
      * Método que muestra el alumno almacenado en el ArrayList listaAlumnos en la posición pasada
      * como parámetro
@@ -423,6 +545,7 @@ public class MainActivity extends Activity {
         matricula.setText("" + alumno2.getMatricula());
         telefono.setText("" + alumno2.getTelefono());
         email.setText(alumno2.getEmail());
+
     } // fin mostrarAlumno()
 
     /**

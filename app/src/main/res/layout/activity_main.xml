@@ -69,6 +69,13 @@
         android:layout_height="wrap_content" >
 
         <Button
+            android:id="@+id/btnNuevo"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:text="Nuevo" />
+
+        <Button
             android:id="@+id/insertar"
             android:layout_width="0dp"
             android:layout_height="wrap_content"

@@ -11,6 +11,16 @@ public class Alumno {
         private int telefono;
         private String email;
 
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    private int id;
+
         // para insertar los métodos get y set de forma automática en Android Studio
         // pulsar Alt + Insert  => escoger Getter and Setter
 
